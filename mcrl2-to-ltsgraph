@@ -1,0 +1,9 @@
+!#/usr/bin/env zsh
+
+rm -rf mpsu.l*
+
+mcrl22lps mpsu.mcrl2 mpsu.lps
+
+lps2lts mpsu.lps mpsu.lts
+
+ltsgraph mpsu.lts
