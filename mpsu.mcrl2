@@ -1,0 +1,59 @@
+sort Mode = struct Normal | Emergency;
+    Motor2Status = struct moveLeft | moveRight | stopped2;
+    Motor1Status = struct moveUp | moveDown | stopped1;
+
+act pressStop, pressResume, pressUndock, pressUp, pressDown, pressReset;
+act motor2Left, motor2Right, motor2Off, applyBreak2, releaseBreak2;
+act motor1Up, motor1Down, motor1Off, applyBreak1, releaseBreak1;
+act isDocked, isCalibrated, unlockDock;
+act atRightMost, atLeftMost, atTopMost, atBottomMost, atStdHeight;
+
+proc Console(m:Mode, docked, calibrated, rightMost, leftMost, topMost,
+        bottomMost:Bool, m1s:Motor1Status, m2s:Motor2Status)
+    = pressStop.releaseBreak2.motor2Off.
+        Console(Emergency, docked, calibrated, rightMost, leftMost, topMost,
+        bottomMost, m1s, stopped2)
+    + pressResume.applyBreak2.
+        Console(Normal, docked, calibrated, rightMost, leftMost, topMost,
+        bottomMost, m1s, m2s)
+    + pressUndock.
+        (docked && rightMost)
+            -> applyBreak2.unlockDock.
+            Console(m, false, calibrated, rightMost, leftMost, topMost,
+            bottomMost, m1s, m2s)
+            <> Console(m, docked, calibrated, rightMost, leftMost, topMost,
+            bottomMost, m1s, m2s)
+    + pressReset.
+        ((m==Normal)
+            -> (docked && !calibrated)
+                -> Console(m, docked, true, rightMost, leftMost, topMost,
+                    bottomMost, m1s, m2s)
+                + (!docked)
+                -> Console(m, docked, false, rightMost, leftMost, topMost,
+                    bottomMost, m1s, m2s)
+                <> Console(m, docked, calibrated, rightMost, leftMost, topMost,
+                    bottomMost, m1s, m2s))
+    + pressUp.
+        (m==Normal && docked && calibrated && m2s!=moveLeft && !leftMost)
+            -> releaseBreak2.motor2Left.
+                Console(m, docked, calibrated, false, leftMost, topMost,
+                bottomMost, m1s, moveLeft)
+            <> Console(m, docked, calibrated, rightMost, leftMost, topMost,
+                bottomMost, m1s, m2s)
+    + pressDown.
+        (m==Normal && docked && calibrated && m2s!=moveRight && !rightMost)
+            -> releaseBreak2.motor2Right.
+                Console(m, docked, calibrated, rightMost, false, topMost,
+                bottomMost, m1s, moveRight)
+            <> Console(m, docked, calibrated, rightMost, leftMost, topMost,
+                bottomMost, m1s, m2s);
+
+%proc Sensor(m:Mode, docked, rightMost, leftMost:Bool, ms:MotorStatus)
+%   + isDocked.Controller(m, true, rightMost, leftMost, ms)
+%   + atLeftMost.motorOff.applyBreak.Controller(m, docked, true, false, stopped)
+%   + atRightMost.motorOff.applyBreak.Controller(m, docked, false, true, stopped);
+
+%proc Hardware
+
+init Console(Normal, true, true, false, false, false,
+        false, stopped1, stopped2);
