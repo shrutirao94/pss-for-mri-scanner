@@ -1,0 +1,35 @@
+sort
+    Modes = struct Normal | Emergency;
+    Motor2Status = struct moveLeft | moveRight | stopped2;
+    Motor1Status = struct moveUp | moveDown | stopped1;
+    Inputs = struct pressStop;
+
+act
+    read1, send2, read2, com2: Inputs;
+    send3, read3, com3: Modes;
+    motor2Off, releaseBreak2;
+
+proc
+    Console
+        = sum input:Inputs. read1(input).send2(input).Console;
+
+    Sensor(docked:Bool, m2s:Motor2Status)
+        = sum input:Inputs. read2(input).
+            (docked && input == pressStop)
+                -> send3(Emergency).Sensor(m2s = stopped2)
+                <> Sensor(docked, m2s);
+
+    Hardware
+        = sum input:Modes. read3(input).
+            (input == Emergency)
+                -> releaseBreak2.motor2Off.Hardware
+                <> Hardware;
+
+init
+    allow({read1, com2, com3},
+        comm({
+                send2|read2 -> com2,
+                send3|read3 -> com3
+            },
+        Console || Sensor(true, stopped2) || Hardware
+    ));
