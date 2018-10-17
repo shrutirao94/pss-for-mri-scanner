@@ -34,19 +34,29 @@ proc Console(m:Mode, docked, calibrated, rightMost, leftMost, topMost,
                 <> Console(m, docked, calibrated, rightMost, leftMost, topMost,
                     bottomMost, m1s, m2s))
     + pressUp.
-        (m==Normal && docked && calibrated && m2s!=moveLeft && !leftMost)
-            -> releaseBreak2.motor2Left.
-                Console(m, docked, calibrated, false, leftMost, topMost,
-                bottomMost, m1s, moveLeft)
+        ((m==Normal)
+            -> (docked && calibrated && m2s!=moveLeft && !leftMost)
+                -> releaseBreak2.motor2Left.
+                    Console(m, docked, calibrated, false, leftMost, topMost,
+                        bottomMost, m1s, moveLeft)
+            + (!calibrated && m1s!=moveUp && !topMost)
+                -> releaseBreak1.motor1Up.
+                    Console(m, docked, calibrated, rightMost, leftMost, topMost,
+                    false, moveUp, m2s)
             <> Console(m, docked, calibrated, rightMost, leftMost, topMost,
-                bottomMost, m1s, m2s)
+                bottomMost, m1s, m2s))
     + pressDown.
-        (m==Normal && docked && calibrated && m2s!=moveRight && !rightMost)
-            -> releaseBreak2.motor2Right.
-                Console(m, docked, calibrated, rightMost, false, topMost,
-                bottomMost, m1s, moveRight)
+        ((m==Normal)
+            -> (docked && calibrated && m2s!=moveRight && !rightMost)
+                -> releaseBreak2.motor2Right.
+                    Console(m, docked, calibrated, rightMost, false, topMost,
+                    bottomMost, m1s, moveRight)
+            + (!calibrated && m1s!=moveDown && !bottomMost)
+                -> releaseBreak1.motor1Down.
+                    Console(m, docked, calibrated, rightMost, leftMost, false,
+                    bottomMost, moveDown, m2s)
             <> Console(m, docked, calibrated, rightMost, leftMost, topMost,
-                bottomMost, m1s, m2s);
+                bottomMost, m1s, m2s));
 
 %proc Sensor(m:Mode, docked, rightMost, leftMost:Bool, ms:MotorStatus)
 %   + isDocked.Controller(m, true, rightMost, leftMost, ms)
