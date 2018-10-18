@@ -2,8 +2,8 @@
 
 rm -rf mpsu.l*
 
-mcrl22lps mpsu.mcrl2 mpsu.lps
+mcrl22lps mpsu-parallel.mcrl2 mpsu-parallel.lps
 
-lps2lts mpsu.lps mpsu.lts
+lps2lts mpsu-parallel.lps mpsu-parallel.lts
 
-ltsgraph mpsu.lts
+ltsgraph mpsu-parallel.lts
