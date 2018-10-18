@@ -40,6 +40,8 @@ proc
             + (mode == Normal && docked && calibrated && m2s!=moveRight &&
             !rightMost)
                -> send3(opDown1).Sensor(leftMost = false, m2s = moveRight)
+            + (mode == Normal && !calibrated && m1s!=moveDown && !bottomMost)
+               -> send3(opDown2).Sensor(topMost = false, m1s = moveDown)
     		<> Sensor(mode, docked, calibrated, rightMost, leftMost, topMost,
                         bottomMost, m1s, m2s));
 
@@ -57,6 +59,8 @@ proc
                 -> releaseBreak1.motor1Up.Hardware
             + (input == opDown1)
                 -> releaseBreak2.motor2Right.Hardware
+            + (input == opDown2)
+                -> releaseBreak1.motor1Down.Hardware
 			<> Hardware);
 
 init
