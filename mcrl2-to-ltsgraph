@@ -1,6 +1,6 @@
-!#/usr/bin/env zsh
+#!/usr/bin/env zsh
 
-rm -rf mpsu.l*
+rm -rf mpsu-parallel.l*
 
 mcrl22lps mpsu-parallel.mcrl2 mpsu-parallel.lps
 
