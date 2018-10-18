@@ -5,8 +5,8 @@ sort Mode = struct Normal | Emergency;
 act pressStop, pressResume, pressUndock, pressUp, pressDown, pressReset;
 act motor2Left, motor2Right, motor2Off, applyBreak2, releaseBreak2;
 act motor1Up, motor1Down, motor1Off, applyBreak1, releaseBreak1;
-act isDocked, isCalibrated, unlockDock;
-act atRightMost, atLeftMost, atTopMost, atBottomMost, atStdHeight;
+act isDocked, unlockDock;
+act atRightMost, atLeftMost, atTopMost, atBottomMost;
 
 proc Console(m:Mode, docked, calibrated, rightMost, leftMost, topMost,
         bottomMost:Bool, m1s:Motor1Status, m2s:Motor2Status)
