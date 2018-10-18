@@ -2,20 +2,24 @@ sort
     Modes = struct Normal | Emergency;
     Motor2Status = struct moveLeft | moveRight | stopped2;
     Motor1Status = struct moveUp | moveDown | stopped1;
-    Inputs = struct pressStop | pressResume | pressUndock | pressReset;
-    Operations = struct opInEmg | opInNorm | opUndock;
+    Inputs = struct pressStop | pressResume | pressUndock |
+                    pressReset | pressUp;
+    Operations = struct opInEmg | opInNorm | opUndock | opUp1;
 
 
 act
     read1, send2, read2, com2: Inputs;
     send3, read3, com3: Operations;
-    motor2Off, releaseBreak2, applyBreak2, unlockDock;
+    motor2Left, motor2Right, motor2Off, applyBreak2, releaseBreak2;
+    motor1Up, motor1Down, motor1Off, applyBreak1, releaseBreak1;
+    unlockDock;
 
 proc
     Console
 		= sum input:Inputs. read1(input).send2(input).Console;
 
-    Sensor(mode:Modes, docked, calibrated, rightMost:Bool, m2s:Motor2Status)
+    Sensor(mode:Modes, docked, calibrated, rightMost, leftMost, topMost,
+            bottomMost:Bool, m1s:Motor1Status, m2s:Motor2Status)
         = sum input:Inputs. read2(input).
     		((docked && input == pressStop)
                 -> send3(opInEmg).Sensor(mode = Emergency, m2s = stopped2)
@@ -27,7 +31,10 @@ proc
                 -> Sensor(calibrated = true)
     		+ (!docked && mode == Normal)
                 -> Sensor(calibrated = false)
-    		<> Sensor(mode, docked, calibrated, rightMost, m2s));
+            + (mode == Normal && docked && calibrated && m2s!=moveLeft && !leftMost)
+                -> send3(opUp1).Sensor(rightMost = false, m2s = moveLeft)
+    		<> Sensor(mode, docked, calibrated, rightMost, leftMost, topMost,
+                        bottomMost, m1s, m2s));
 
     Hardware
         = sum input:Operations. read3(input).
@@ -36,14 +43,18 @@ proc
             + (input == opInNorm)
 	            -> applyBreak2.Hardware
             + (input == opUndock)
-                -> applyBreak2.unlockDock
+                -> applyBreak2.unlockDock.Hardware
+            + (input == opUp1)
+                -> releaseBreak2.motor2Left.Hardware
 			<> Hardware);
 
 init
+    hide({read1, com2, com3},
     allow({read1, com2, com3},
-        comm({
-                send2|read2 -> com2,
-                send3|read3 -> com3
-            },
-        Console || Sensor(Normal, true, true, false, stopped2) || Hardware
-    ));
+    comm({
+        send2|read2 -> com2,
+        send3|read3 -> com3},
+        Console
+        || Sensor(Normal, true, true, false, false, false, false, stopped1, stopped2)
+        || Hardware
+    )));
