@@ -2,36 +2,40 @@ sort
     Modes = struct Normal | Emergency;
     Motor2Status = struct moveLeft | moveRight | stopped2;
     Motor1Status = struct moveUp | moveDown | stopped1;
-    Inputs = struct pressStop | pressResume;
-    Operations = struct inEmg | inNorm;
+    Inputs = struct pressStop | pressResume | pressUndock;
+    Operations = struct opInEmg | opInNorm | opUndock;
 
 
 act
     read1, send2, read2, com2: Inputs;
     send3, read3, com3: Operations;
-    motor2Off, releaseBreak2, applyBreak2;
+    motor2Off, releaseBreak2, applyBreak2, unlockDock;
 
 proc
     Console
 		= sum input:Inputs. read1(input).send2(input).Console;
 
-    Sensor(mode:Modes, docked:Bool, m2s:Motor2Status)
+    Sensor(mode:Modes, docked, rightMost:Bool, m2s:Motor2Status)
         = sum input:Inputs. read2(input).
 			(docked) -> (
 				(input == pressStop)
-					-> send3(inEmg).Sensor(mode = Emergency, m2s = stopped2)
+					-> send3(opInEmg).Sensor(mode = Emergency, m2s = stopped2)
 				+ (input == pressResume)
-					-> send3(inNorm).Sensor(mode = Normal)
+					-> send3(opInNorm).Sensor(mode = Normal)
+                + (input == pressUndock && rightMost)
+                    -> send3(opUndock).Sensor(docked = false)
 			)
-			<> Sensor(mode, docked, m2s);
+			<> Sensor(mode, docked, rightMost, m2s);
 
     Hardware
         = sum input:Operations. read3(input).
             (true) -> (
-				(input == inEmg)
+				(input == opInEmg)
 					-> releaseBreak2.motor2Off.Hardware
-				+ (input == inNorm)
+				+ (input == opInNorm)
 					-> applyBreak2.Hardware
+                + (input == opUndock)
+                    -> applyBreak2.unlockDock
 			)
 			<> Hardware;
 
@@ -41,5 +45,5 @@ init
                 send2|read2 -> com2,
                 send3|read3 -> com3
             },
-        Console || Sensor(Normal, true, stopped2) || Hardware
+        Console || Sensor(Normal, true, false, stopped2) || Hardware
     ));
