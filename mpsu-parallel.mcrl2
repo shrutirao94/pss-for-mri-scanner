@@ -2,7 +2,7 @@ sort
     Modes = struct Normal | Emergency;
     Motor2Status = struct moveLeft | moveRight | stopped2;
     Motor1Status = struct moveUp | moveDown | stopped1;
-    Inputs = struct pressStop | pressResume | pressUndock;
+    Inputs = struct pressStop | pressResume | pressUndock | pressReset;
     Operations = struct opInEmg | opInNorm | opUndock;
 
 
@@ -15,29 +15,29 @@ proc
     Console
 		= sum input:Inputs. read1(input).send2(input).Console;
 
-    Sensor(mode:Modes, docked, rightMost:Bool, m2s:Motor2Status)
+    Sensor(mode:Modes, docked, calibrated, rightMost:Bool, m2s:Motor2Status)
         = sum input:Inputs. read2(input).
-			(docked) -> (
-				(input == pressStop)
-					-> send3(opInEmg).Sensor(mode = Emergency, m2s = stopped2)
-				+ (input == pressResume)
-					-> send3(opInNorm).Sensor(mode = Normal)
-                + (input == pressUndock && rightMost)
-                    -> send3(opUndock).Sensor(docked = false)
-			)
-			<> Sensor(mode, docked, rightMost, m2s);
+    		((docked && input == pressStop)
+                -> send3(opInEmg).Sensor(mode = Emergency, m2s = stopped2)
+    		+ (docked && input == pressResume)
+                -> send3(opInNorm).Sensor(mode = Normal)
+            + (docked && input == pressUndock && rightMost)
+                -> send3(opUndock).Sensor(docked = false)
+            + (docked && mode == Normal && !calibrated)
+                -> Sensor(calibrated = true)
+    		+ (!docked && mode == Normal)
+                -> Sensor(calibrated = false)
+    		<> Sensor(mode, docked, calibrated, rightMost, m2s));
 
     Hardware
         = sum input:Operations. read3(input).
-            (true) -> (
-				(input == opInEmg)
-					-> releaseBreak2.motor2Off.Hardware
-				+ (input == opInNorm)
-					-> applyBreak2.Hardware
-                + (input == opUndock)
-                    -> applyBreak2.unlockDock
-			)
-			<> Hardware;
+            ((input == opInEmg)
+	            -> releaseBreak2.motor2Off.Hardware
+            + (input == opInNorm)
+	            -> applyBreak2.Hardware
+            + (input == opUndock)
+                -> applyBreak2.unlockDock
+			<> Hardware);
 
 init
     allow({read1, com2, com3},
@@ -45,5 +45,5 @@ init
                 send2|read2 -> com2,
                 send3|read3 -> com3
             },
-        Console || Sensor(Normal, true, false, stopped2) || Hardware
+        Console || Sensor(Normal, true, true, false, stopped2) || Hardware
     ));
