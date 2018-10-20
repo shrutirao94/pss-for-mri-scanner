@@ -6,14 +6,17 @@ sort
                     pressReset | pressUp | pressDown;
     Operations = struct opInEmg | opInNorm | opUndock | opUp1 | opUp2
                         | opDown1 | opDown2;
+    Feedbacks = struct fdDocked | fdRightMost | fdLeftMost | fdTopMost | fdBottomMost;
 
 
 act
     read1, send2, read2, com2: Inputs;
     send3, read3, com3: Operations;
+    send4, read4, com4: Feedbacks;
     motor2Left, motor2Right, motor2Off, applyBreak2, releaseBreak2;
     motor1Up, motor1Down, motor1Off, applyBreak1, releaseBreak1;
-    unlockDock;
+    atRightMost, atLeftMost, atTopMost, atBottomMost;
+    isDocked, unlockDock;
 
 proc
     Console
@@ -43,6 +46,12 @@ proc
             + (mode == Normal && !calibrated && m1s!=moveDown && !bottomMost)
                -> send3(opDown2).Sensor(topMost = false, m1s = moveDown)
     		<> Sensor(mode, docked, calibrated, rightMost, leftMost, topMost,
+                        bottomMost, m1s, m2s))
+
+        + sum input:Feedbacks. read4(input).
+            ((input == fdDocked)
+                -> Sensor(docked = true)
+            <> Sensor(mode, docked, calibrated, rightMost, leftMost, topMost,
                         bottomMost, m1s, m2s));
 
     Hardware
@@ -61,14 +70,18 @@ proc
                 -> releaseBreak2.motor2Right.Hardware
             + (input == opDown2)
                 -> releaseBreak1.motor1Down.Hardware
-			<> Hardware);
+			<> Hardware)
+
+        + isDocked.send4(fdDocked)
+        +
 
 init
-    hide({read1, com2, com3},
-    allow({read1, com2, com3},
+    hide({read1, com2, com3, com4},
+    allow({read1, com2, com3, com4},
     comm({
         send2|read2 -> com2,
-        send3|read3 -> com3},
+        send3|read3 -> com3,
+        send4|read4 -> com4},
         Console
         || Sensor(Normal, true, true, false, false, false, false, stopped1, stopped2)
         || Hardware
